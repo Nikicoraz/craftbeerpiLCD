@@ -79,6 +79,14 @@ def set_parameter_refresh():
       ref = cbpi.get_config_parameter('LCD_Refresh', None)
   return ref
 
+
+def set_time_between_display_change():
+  ref = cbpi.get_config_parameter('LCD_Show_temp_time', None)
+  if ref is None:
+      cbpi.add_config_parameter('LCD_Show_temp_time', 2, 'select', 'Time to remain till next temperature display in sec, NO! CBPi reboot required',[1,2,3,4,5,6])
+      ref = cbpi.get_config_parameter('LCD_Refresh', None)
+  return ref
+
 def set_parameter_multidisplay():  
   multi = cbpi.get_config_parameter('LCD_Multidisplay', None)
   if multi is None:
@@ -238,7 +246,7 @@ def show_singlemode(id1):
     lcd.cursor_pos = (3, 0)
     lcd.write_string(line4)
 
-def show_fermentation_multidisplay(refresh):
+def show_fermentation_multidisplay(refresh, tbdc):
     for idx, value in cbpi.cache["fermenter"].iteritems():
         current_sensor_value = (cbpi.get_sensor_value(value.sensor))
         #INFO value = modules.fermenter.Fermenter
@@ -301,9 +309,11 @@ def show_fermentation_multidisplay(refresh):
             lcd.write_string(u"\x01")       
         lcd.cursor_pos = (1, 0)
         lcd.write_string(line2)
-        lcd.cursor_pos = (2, 0)
+        time.sleep(tbdc)
+        lcd.clear()
+        lcd.cursor_pos = (0, 0)
         lcd.write_string(line3)
-        lcd.cursor_pos = (3, 0)
+        lcd.cursor_pos = (1, 0)
         lcd.write_string(line4)
 
         time.sleep(refresh)
@@ -378,6 +388,7 @@ def lcdjob(api):
     s = cbpi.cache.get("active_step")
 
     refreshTime = float(set_parameter_refresh())
+    tbdc = float(set_time_between_display_change())
 
     multidisplay_status = str(set_parameter_multidisplay())
     
@@ -388,7 +399,7 @@ def lcdjob(api):
         show_singlemode(int(set_parameter_id1()))
 
     elif is_fermenter_step_running() == "active":
-        show_fermentation_multidisplay(refreshTime)
+        show_fermentation_multidisplay(refreshTime, tbdc)
 
     else:
         show_standby(ip)
